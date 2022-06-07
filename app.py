@@ -3,6 +3,7 @@
 #----------------------------------------------------------------------------#
 
 import json
+import sys
 import dateutil.parser
 import babel
 from flask import Flask, render_template, request, Response, flash, redirect, url_for
@@ -34,16 +35,21 @@ class Venue(db.Model):
     __tablename__ = 'Venue'
 
     id = db.Column(db.Integer, primary_key=True)
-    name = db.Column(db.String)
+    name = db.Column(db.String(), nullable=False)
     city = db.Column(db.String(120))
     state = db.Column(db.String(120))
     address = db.Column(db.String(120))
     phone = db.Column(db.String(120))
-    image_link = db.Column(db.String(500))
+    image_link = db.Column(db.String(500), nullable=False)
+    genres = db.Column(db.ARRAY(db.String()))
     facebook_link = db.Column(db.String(120))
-
+    website_link = db.Column(db.String(120))
+    seeking_talent = db.Column(db.Boolean, nullable=False, default=False)
+    seeking_decription = db.Column(db.String(500))
     shows = db.relationship('Show', backref='venue', lazy=True)
 
+    def __repr__(self):
+        return f'<Venue {self.id} {self.name}>'
     # TODO: implement any missing fields, as a database migration using Flask-Migrate
 
 
@@ -51,15 +57,21 @@ class Artist(db.Model):
     __tablename__ = 'Artist'
 
     id = db.Column(db.Integer, primary_key=True)
-    name = db.Column(db.String)
+    name = db.Column(db.String(), nullable=False)
     city = db.Column(db.String(120))
     state = db.Column(db.String(120))
     phone = db.Column(db.String(120))
-    genres = db.Column(db.String(120))
-    image_link = db.Column(db.String(500))
+    image_link = db.Column(db.String(500), nullable=False)
     facebook_link = db.Column(db.String(120))
+    website_link = db.Column(db.String(120))
+    seeking_venue = db.Column(db.Boolean, nullable=False, default=False)
+    seeking_description = db.Column(db.String(500))
+    genres = db.Column(db.ARRAY(db.String()), nullable=False)
 
     shows = db.relationship('Show', backref='artist', lazy=True)
+
+    def __repr__(self):
+        return f'<Artist {self.id} {self.name}>'
 
 
 class Show(db.Model):
@@ -247,6 +259,41 @@ def create_venue_form():
 def create_venue_submission():
     # TODO: insert form data as a new Venue record in the db, instead
     # TODO: modify data to be the data object returned from db insertion
+    form = VenueForm()
+    name = form.name.data
+    city = form.city.data
+    state = form.state.data
+    address = form.address.data
+    phone = form.phone.data
+    genres = form.genres.data
+    image_link = form.image_link.data
+    facebook_link = form.facebook_link.data
+    website_link = form.website_link.data
+    seeking_talent = form.seeking_talent.data
+    seeking_description = form.seeking_description.data
+
+    # to validate that input is correct
+    if not form.validate():
+        flash('An error occurred ' +
+              request.form['name'] + ' could not be listed.')
+        return redirect(url_for('create_venue_form'))
+    else:
+        try:
+            venue = Venue(name=name, city=city, state=state, address=address,
+                          phone=phone, genres=genres, image_link=image_link,
+                          facebook_link=facebook_link, website=website_link,
+                          seeking_talent=seeking_talent,
+                          seeking_description=seeking_description)
+            db.session.add(venue)
+            db.session.commit()
+            flash(f'{name} was successfully listed!')
+        except:
+            db.session.rollback()
+            flash(f'An error occurred. {name} could not be listed.')
+            print(sys.exc_info())
+        finally:
+            db.session.close()
+        return render_template('pages/home.html')
 
     # on successful db insert, flash success
     flash('Venue ' + request.form['name'] + ' was successfully listed!')
