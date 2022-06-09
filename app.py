@@ -501,6 +501,36 @@ def create_artist_submission():
     # called upon submitting the new artist listing form
     # TODO: insert form data as a new Venue record in the db, instead
     # TODO: modify data to be the data object returned from db insertion
+    form = ArtistForm()
+    name = form.name.data
+    city = form.city.data
+    state = form.state.data
+    phone = form.phone.data
+    genres = form.genres.data
+    facebook_link = form.facebook_link.data
+    image_link = form.image_link.data
+    website_link = form.website_link.data
+    seeking_venue = form.seeking_venue.data
+    seeking_description = form.seeking_description.data
+
+    if not form.validate():
+        flash('An error occurred. Artist ' +
+              name + ' could not be listed.')
+        return redirect(url_for('create_artist_form'))
+    else:
+        try:
+            Artist(name=name, city=city, state=state, phone=phone, genres=genres, facebook_link=facebook_link, image_link=image_link,
+                   website_link=website_link, seeking_venue=seeking_venue, seeking_description=seeking_description)
+            db.session.commit()
+            flash('Artist ' + name + ' was successfully listed!')
+        except:
+            db.session.rollback()
+            flash('An error occurred. Artist ' +
+                  name + ' could not be listed.')
+            print(sys.exc_info())
+        finally:
+            db.session.close()
+        return render_template('pages/home.html')
 
     # on successful db insert, flash success
     flash('Artist ' + request.form['name'] + ' was successfully listed!')
@@ -566,7 +596,26 @@ def create_shows():
 def create_show_submission():
     # called to create new shows in the db, upon submitting new show listing form
     # TODO: insert form data as a new Show record in the db, instead
+    form = ShowForm()
+    artist_id = form.artist_id.data
+    venue_id = form.venue_id.data
+    start_time = form.start_time.data
 
+    if not form.validate():
+        flash('An error occurred. Show could not be listed.')
+        return redirect(url_for('create_shows'))
+    else:
+        try:
+            Show(artist_id=artist_id, venue_id=venue_id, start_time=start_time)
+            db.session.commit()
+            flash('Show was successfully listed!')
+        except:
+            db.session.rollback()
+            flash('An error occurred. Show could not be listed.')
+            print(sys.exc_info())
+        finally:
+            db.session.close()
+        return render_template('pages/home.html')
     # on successful db insert, flash success
     flash('Show was successfully listed!')
     # TODO: on unsuccessful db insert, flash an error instead.
