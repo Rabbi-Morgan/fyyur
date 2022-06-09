@@ -44,20 +44,20 @@ class Venue(db.Model):
 
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(), nullable=False)
-    city = db.Column(db.String(120))
-    state = db.Column(db.String(120))
-    address = db.Column(db.String(120))
-    phone = db.Column(db.String(120))
+    city = db.Column(db.String(120), nullable=False)
+    state = db.Column(db.String(120), nullable=False)
+    address = db.Column(db.String(120), nullable=False)
+    phone = db.Column(db.String(120), nullable=False)
     image_link = db.Column(db.String(500), nullable=False)
-    genres = db.Column(db.ARRAY(db.String()))
-    facebook_link = db.Column(db.String(120))
-    website_link = db.Column(db.String(120))
+    genres = db.Column(db.ARRAY(db.String()), nullable=False)
+    facebook_link = db.Column(db.String(120), nullable=False)
+    website_link = db.Column(db.String(120), nullable=False)
     seeking_talent = db.Column(db.Boolean, nullable=False, default=False)
-    seeking_decription = db.Column(db.String(500))
+    seeking_decription = db.Column(db.String(500), nullable=False)
     shows = db.relationship('Show', backref='venue', lazy=True)
 
     def __repr__(self):
-        return f'<Venue {self.id} {self.name}>'
+        return f'<Venue {self.id}, {self.name}>'
     # TODO: implement any missing fields, as a database migration using Flask-Migrate
 
 
@@ -66,20 +66,20 @@ class Artist(db.Model):
 
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(), nullable=False)
-    city = db.Column(db.String(120))
-    state = db.Column(db.String(120))
-    phone = db.Column(db.String(120))
+    city = db.Column(db.String(120), nullable=False)
+    state = db.Column(db.String(120), nullable=False)
+    phone = db.Column(db.String(120), nullable=False)
     image_link = db.Column(db.String(500), nullable=False)
-    facebook_link = db.Column(db.String(120))
-    website_link = db.Column(db.String(120))
+    facebook_link = db.Column(db.String(120), nullable=False)
+    website_link = db.Column(db.String(120), nullable=False)
     seeking_venue = db.Column(db.Boolean, nullable=False, default=False)
-    seeking_description = db.Column(db.String(500))
+    seeking_description = db.Column(db.String(500), nullable=False)
     genres = db.Column(db.ARRAY(db.String()), nullable=False)
 
     shows = db.relationship('Show', backref='artist', lazy=True)
 
     def __repr__(self):
-        return f'<Artist {self.id} {self.name}>'
+        return f'<Artist {self.id}, {self.name}, {self.seeking_description}>'
 
 
 class Show(db.Model):
@@ -134,7 +134,7 @@ def venues():
     venues = Venue.query.order_by(Venue.city, Venue.state).all()
     c_vs = set()
     for venue in venues:
-        c_vs.add(venue.city, venue.state)
+        c_vs.add((venue.city, venue.state))
     c_vs = list(c_vs)
     data = []
     for c_v in c_vs:
@@ -279,15 +279,15 @@ def create_venue_submission():
                           seeking_description=seeking_description)
             db.session.add(venue)
             db.session.commit()
-            flash(f'{name} was successfully listed!')
         except:
             db.session.rollback()
             flash(f'An error occurred. {name} could not be listed.')
             print(sys.exc_info())
         finally:
+            flash('Venue ' + request.form['name'] +
+                  ' was successfully listed!')
             db.session.close()
-    flash('Venue ' + request.form['name'] + ' was successfully listed!')
-    return render_template('pages/home.html')
+            return render_template('pages/home.html')
 
 
 @app.route('/venues/<venue_id>', methods=['DELETE'])
@@ -466,7 +466,6 @@ def edit_artist_submission(artist_id):
         artist.seeking_venue = seeking_venue
         artist.seeking_description = seeking_description
         db.session.commit()
-        flash('Artist ' + request.form['name'] + ' was successfully updated!')
     except:
         flash('An error occurred. Artist ' +
               request.form['name'] + ' could not be updated.')
@@ -474,6 +473,7 @@ def edit_artist_submission(artist_id):
         print(sys.exc_info())
         abort(500)
     finally:
+        flash('Artist ' + request.form['name'] + ' was successfully updated!')
         db.session.close()
     return redirect(url_for('show_artist', artist_id=artist_id))
 
@@ -562,7 +562,7 @@ def create_artist_submission():
 
     if not form.validate():
         flash('An error occurred. Artist ' +
-              name + ' could not be listed.')
+              request.form['name'] + ' could not be listed.')
         return redirect(url_for('create_artist_form'))
     else:
         try:
@@ -576,7 +576,8 @@ def create_artist_submission():
             print(sys.exc_info())
             abort(500)
         finally:
-            flash('Artist ' + name + ' was successfully listed!')
+            flash('Artist ' + request.form['name'] +
+                  ' was successfully listed!')
             db.session.close()
         flash('Artist ' + request.form['name'] + ' was successfully listed!')
         return render_template('pages/home.html')
