@@ -119,29 +119,59 @@ def index():
 @app.route('/venues')
 def venues():
     # TODO: replace with real venues data.
-    #       num_upcoming_shows should be aggregated based on number of upcoming shows per venue.
-    data = [{
-        "city": "San Francisco",
-        "state": "CA",
-        "venues": [{
-            "id": 1,
-            "name": "The Musical Hop",
-            "num_upcoming_shows": 0,
-        }, {
-            "id": 3,
-            "name": "Park Square Live Music & Coffee",
-            "num_upcoming_shows": 1,
-        }]
-    }, {
-        "city": "New York",
-        "state": "NY",
-        "venues": [{
-            "id": 2,
-            "name": "The Dueling Pianos Bar",
-            "num_upcoming_shows": 0,
-        }]
-    }]
+    # num_upcoming_shows should be aggregated based on number of upcoming shows per venue.
+    venues = Venue.query.all()
+    c_vs = set()
+    for venue in venues:
+        c_vs.add(venue.city, venue.state)
+    c_vs = list(c_vs)
+    start_time = datetime.now()
+    data = []
+    for c_v in c_vs:
+        city, state = c_v
+        venuess = []
+        for venue in venues:
+            if venue.city == city and venue.state == state:
+                v = Show.query.filter(Show.venue_id == venue.id).all()
+                num_upcoming_shows = 0
+                for show in v:
+                    if show.start_time > start_time:
+                        num_upcoming_shows += 1
+
+                venuess.append({
+                    "id": venue.id,
+                    "name": venue.name,
+                    "num_upcoming_shows": num_upcoming_shows
+                })
+        data.append({
+            "city": city,
+            "state": state,
+            "venues": venuess
+        })
     return render_template('pages/venues.html', areas=data)
+
+    # data = [{
+    #     "city": "San Francisco",
+    #     "state": "CA",
+    #     "venues": [{
+    #         "id": 1,
+    #         "name": "The Musical Hop",
+    #         "num_upcoming_shows": 0,
+    #     }, {
+    #         "id": 3,
+    #         "name": "Park Square Live Music & Coffee",
+    #         "num_upcoming_shows": 1,
+    #     }]
+    # }, {
+    #     "city": "New York",
+    #     "state": "NY",
+    #     "venues": [{
+    #         "id": 2,
+    #         "name": "The Dueling Pianos Bar",
+    #         "num_upcoming_shows": 0,
+    #     }]
+    # }]
+    # return render_template('pages/venues.html', areas=data)
 
 
 @app.route('/venues/search', methods=['POST'])
